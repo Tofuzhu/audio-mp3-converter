@@ -16,7 +16,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 AUDIO_EXTS = {".m4a", ".aac", ".flac", ".wav", ".ogg", ".wma", ".opus", ".mp3"}
 CONFIG_FILE = Path(__file__).parent / "mp3converter_config.json"
-DEFAULT_FFMPEG = r"D:\ffmpeg\bin\ffmpeg.exe"
+FFMPEG_SEARCH_PATHS = [
+    r"C:\ffmpeg\bin\ffmpeg.exe",
+    r"D:\ffmpeg\bin\ffmpeg.exe",
+    str(Path(__file__).parent / "ffmpeg" / "bin" / "ffmpeg.exe"),
+]
 CHECK_ON  = "☑"
 CHECK_OFF = "☐"
 
@@ -39,8 +43,9 @@ def find_ffmpeg():
     found = shutil.which("ffmpeg")
     if found:
         return found
-    if os.path.exists(DEFAULT_FFMPEG):
-        return DEFAULT_FFMPEG
+    for p in FFMPEG_SEARCH_PATHS:
+        if os.path.exists(p):
+            return p
     return ""
 
 def parse_duration(text: str) -> float:
@@ -105,6 +110,8 @@ class ConverterApp(tk.Tk):
         self._build_ui()
         self._scan_source()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        if not self.var_ffmpeg.get():
+            self.after(300, self._ffmpeg_setup_guide)
 
     # ── UI ────────────────────────────────────────────────────────────────────
 
@@ -423,6 +430,22 @@ class ConverterApp(tk.Tk):
         self.after(0, _do)
 
     # ── Config / close ────────────────────────────────────────────────────────
+
+    def _ffmpeg_setup_guide(self):
+        msg = (
+            "未检测到 ffmpeg，转换功能无法使用。\n\n"
+            "请选择安装方式：\n\n"
+            "  • 是  → 打开 ffmpeg 官网下载页\n"
+            "  • 否  → 手动指定已有的 ffmpeg.exe 路径\n\n"
+            "安装后在顶部 ffmpeg 栏填入路径，或点 Browse 选择。\n"
+            "也可将 ffmpeg 解压到程序同目录的 ffmpeg/bin/ 下，下次自动识别。"
+        )
+        go_web = messagebox.askyesno("ffmpeg 未找到", msg, icon="warning")
+        if go_web:
+            import webbrowser
+            webbrowser.open("https://ffmpeg.org/download.html#build-windows")
+        else:
+            self._browse_ffmpeg()
 
     def _save_cfg(self):
         save_config({
