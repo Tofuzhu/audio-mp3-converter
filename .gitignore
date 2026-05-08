@@ -1,0 +1,15 @@
+# Audio files
+*.m4a
+*.mp3
+*.aac
+*.flac
+*.wav
+*.ogg
+*.wma
+*.opus
+
+# User config
+mp3converter_config.json
+
+# Claude Code
+.claude/
